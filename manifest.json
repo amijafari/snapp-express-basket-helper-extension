@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Snapp Express Basket Helper",
+  "version": "1.0.0",
+  "description": "Find Snapp Express stores that carry all products in your shopping list",
+  "icons": {
+    "16": "favicon.ico",
+    "48": "favicon.ico",
+    "128": "favicon.ico"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Snapp Express Basket Helper",
+    "default_icon": {
+      "16": "favicon.ico",
+      "48": "favicon.ico",
+      "128": "favicon.ico"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://express.snapp.market/*"],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "permissions": [
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://express.snapp.market/*",
+    "https://api.snapp.express/*"
+  ]
+}
+
