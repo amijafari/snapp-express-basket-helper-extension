@@ -1,25 +1,14 @@
 // Content script for Snapp Express Basket Helper
 // Runs on https://express.snapp.market/*
 
-// Hardcoded coordinates (Tehran area)
 const DEFAULT_LAT = 35.737;
 const DEFAULT_LONG = 51.395;
 
-// Overlay container ID
 const OVERLAY_ID = 'snapp-basket-helper-overlay';
 
-/**
- * Searches for a product using Snapp Express API
- * @param {string} query - Product name to search
- * @param {number} lat - Latitude
- * @param {number} long - Longitude
- * @param {number} page - Page number (default: 0)
- * @returns {Promise<Object>} Parsed JSON response
- */
 async function searchProduct(query, lat = DEFAULT_LAT, long = DEFAULT_LONG, page = 0) {
   const baseUrl = 'https://api.snapp.express/mobile/v3/search';
   
-  // Build query parameters similar to the curl example
   const params = new URLSearchParams({
     query: query,
     superType: '[4]',
@@ -30,7 +19,7 @@ async function searchProduct(query, lat = DEFAULT_LAT, long = DEFAULT_LONG, page
     page: page.toString(),
     pro_client: 'snapp',
     pro_discount: '18000',
-    size: '12',
+    size: '20',
     source: '2',
     client: 'PWA',
     deviceType: 'PWA',
@@ -43,7 +32,7 @@ async function searchProduct(query, lat = DEFAULT_LAT, long = DEFAULT_LONG, page
   try {
     const response = await fetch(url, {
       method: 'GET',
-      credentials: 'include', // Include cookies/session
+      credentials: 'include',
       headers: {
         'accept': 'application/json, text/plain, */*'
       }
@@ -61,15 +50,8 @@ async function searchProduct(query, lat = DEFAULT_LAT, long = DEFAULT_LONG, page
   }
 }
 
-/**
- * Extracts vendors from API response
- * @param {Object} apiResponse - API response object
- * @returns {Array} Array of vendor objects
- */
 function extractVendors(apiResponse) {
   try {
-    // Navigate through the response structure
-    // data.vendor_product_variations.items
     const items = apiResponse?.data?.vendor_product_variations?.items || [];
     return items;
   } catch (error) {
@@ -78,11 +60,6 @@ function extractVendors(apiResponse) {
   }
 }
 
-/**
- * Computes intersection of vendors that have ALL products
- * @param {string[]} productNames - Array of product names to search
- * @returns {Promise<Array>} Array of vendors that have all products
- */
 async function findVendorsWithAllProducts(productNames) {
   if (!productNames || productNames.length === 0) {
     return [];
@@ -91,30 +68,25 @@ async function findVendorsWithAllProducts(productNames) {
   // Map to track vendors: vendorId -> { vendor, products: Map<productName, productObject> }
   const vendorMap = new Map();
 
-  // Search for each product in parallel
   const searchPromises = productNames.map(async (productName) => {
     try {
       const response = await searchProduct(productName);
       const vendors = extractVendors(response);
       
-      // For each vendor found, add it to the map and track this product
       vendors.forEach(vendor => {
         const vendorId = vendor.id;
         
         if (!vendorMap.has(vendorId)) {
           vendorMap.set(vendorId, {
             vendor: vendor,
-            products: new Map() // Map<productName, productObject>
+            products: new Map()
           });
         }
         
-        // The vendor's products array contains products that matched this search query
-        // Take the first product as the matched product (or null if no products)
         const matchedProduct = vendor.products && vendor.products.length > 0 
           ? vendor.products[0] 
           : null;
         
-        // Add this product name and product object to the vendor's product map
         vendorMap.get(vendorId).products.set(productName, matchedProduct);
       });
       
@@ -125,24 +97,19 @@ async function findVendorsWithAllProducts(productNames) {
     }
   });
 
-  // Wait for all searches to complete
   const results = await Promise.all(searchPromises);
   
-  // Check if any search failed
   const failedSearches = results.filter(r => !r.success);
   if (failedSearches.length > 0) {
     const failedProducts = failedSearches.map(r => r.productName).join(', ');
     throw new Error(`Failed to search for: ${failedProducts}`);
   }
 
-  // Compute intersection: only keep vendors that appeared in ALL searches
   const matchingVendors = [];
   const totalProducts = productNames.length;
 
   vendorMap.forEach(({ vendor, products }) => {
-    // Vendor must have all products
     if (products.size === totalProducts) {
-      // Build array of matched products with their details
       const matchedProductsData = productNames.map(productName => {
         const productObj = products.get(productName);
         return {
@@ -165,7 +132,6 @@ async function findVendorsWithAllProducts(productNames) {
     }
   });
 
-  // Sort by deliveryFee ascending (nulls go to end)
   matchingVendors.sort((a, b) => {
     const feeA = a.deliveryFee ?? Infinity;
     const feeB = b.deliveryFee ?? Infinity;
@@ -175,11 +141,6 @@ async function findVendorsWithAllProducts(productNames) {
   return matchingVendors;
 }
 
-/**
- * Formats delivery fee for display
- * @param {number|null} fee - Delivery fee
- * @returns {string} Formatted fee string
- */
 function formatDeliveryFee(fee) {
   if (fee === null || fee === undefined) {
     return 'نامشخص';
@@ -187,11 +148,6 @@ function formatDeliveryFee(fee) {
   return fee.toLocaleString('fa-IR') + ' تومان';
 }
 
-/**
- * Formats rating for display
- * @param {number|null} rating - Rating value
- * @returns {string} Formatted rating string
- */
 function formatRating(rating) {
   if (rating === null || rating === undefined) {
     return 'نامشخص';
@@ -199,40 +155,25 @@ function formatRating(rating) {
   return rating.toFixed(1);
 }
 
-/**
- * Gets product image URL from product object
- * @param {Object|null} product - Product object
- * @returns {string|null} Image URL or null
- */
 function getProductImage(product) {
   if (!product || !product.images || !Array.isArray(product.images) || product.images.length === 0) {
     return null;
   }
-  // Prefer thumb, fallback to main
   const firstImage = product.images[0];
   return firstImage.thumb || firstImage.main || null;
 }
 
-/**
- * Creates or updates the results overlay on the page
- * @param {Array} vendors - Array of matching vendor objects
- * @param {string[]} items - Original product names searched
- */
 function showResultsOverlay(vendors, items) {
-  // Check if overlay already exists
   let overlay = document.getElementById(OVERLAY_ID);
   
   if (!overlay) {
-    // Create new overlay container
     overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
     document.body.appendChild(overlay);
   } else {
-    // Clear existing content
     overlay.innerHTML = '';
   }
 
-  // Create styles
   const style = document.createElement('style');
   style.textContent = `
     #${OVERLAY_ID} {
@@ -378,7 +319,6 @@ function showResultsOverlay(vendors, items) {
   style.id = `${OVERLAY_ID}-style`;
   document.head.appendChild(style);
 
-  // Create header
   const header = document.createElement('div');
   header.className = 'overlay-header';
   
@@ -399,7 +339,6 @@ function showResultsOverlay(vendors, items) {
   header.appendChild(closeBtn);
   overlay.appendChild(header);
 
-  // Create content
   const content = document.createElement('div');
   
   if (vendors.length === 0) {
@@ -412,11 +351,9 @@ function showResultsOverlay(vendors, items) {
       const card = document.createElement('div');
       card.className = 'vendor-card';
       
-      // Vendor header with icon and title
       const vendorHeader = document.createElement('div');
       vendorHeader.className = 'vendor-header';
       
-      // Store icon
       if (vendor.featured) {
         const iconImg = document.createElement('img');
         iconImg.className = 'vendor-icon';
@@ -431,7 +368,6 @@ function showResultsOverlay(vendors, items) {
       const headerText = document.createElement('div');
       headerText.className = 'vendor-header-text';
       
-      // Store title with link
       const titleEl = document.createElement('div');
       titleEl.className = 'vendor-title';
       if (vendor.code) {
@@ -449,13 +385,11 @@ function showResultsOverlay(vendors, items) {
       vendorHeader.appendChild(headerText);
       card.appendChild(vendorHeader);
       
-      // Address
       const addressEl = document.createElement('div');
       addressEl.className = 'vendor-info';
       addressEl.textContent = vendor.address;
       card.appendChild(addressEl);
       
-      // Details (rating, fee, time)
       const detailsEl = document.createElement('div');
       detailsEl.className = 'vendor-details';
       
@@ -477,7 +411,6 @@ function showResultsOverlay(vendors, items) {
       
       card.appendChild(detailsEl);
       
-      // Product images
       const productImagesContainer = document.createElement('div');
       productImagesContainer.className = 'product-images';
       
@@ -509,13 +442,11 @@ function showResultsOverlay(vendors, items) {
 
 // Message listener for communication with popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Handle async response
   (async () => {
     try {
       if (message.type === 'FIND_STORES_FOR_LIST') {
         const items = message.items;
         
-        // Validate input
         if (!items || !Array.isArray(items) || items.length === 0) {
           sendResponse({
             ok: false,
@@ -524,7 +455,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        // Filter out empty strings
         const validItems = items.filter(item => item && typeof item === 'string' && item.trim().length > 0);
         
         if (validItems.length === 0) {
@@ -537,15 +467,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         console.log('Searching for vendors with products:', validItems);
 
-        // Find vendors with all products
         const vendors = await findVendorsWithAllProducts(validItems);
         
         console.log(`Found ${vendors.length} matching vendors`);
 
-        // Show overlay on page
         showResultsOverlay(vendors, validItems);
 
-        // Send success response
         sendResponse({
           ok: true,
           result: vendors
@@ -565,7 +492,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   })();
 
-  // Return true to indicate we will send a response asynchronously
   return true;
 });
 
