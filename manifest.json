@@ -4,17 +4,17 @@
   "version": "1.0.0",
   "description": "Find Snapp Express stores that carry all products in your shopping list",
   "icons": {
-    "16": "favicon.ico",
-    "48": "favicon.ico",
-    "128": "favicon.ico"
+    "16": "images/favicon16.png",
+    "32": "images/favicon32.png",
+    "48": "images/favicon48.png",
+    "128": "images/favicon128.png"
   },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Snapp Express Basket Helper",
     "default_icon": {
-      "16": "favicon.ico",
-      "48": "favicon.ico",
-      "128": "favicon.ico"
+      "16": "images/favicon16.png",
+      "32": "images/favicon32.png"
     }
   },
   "content_scripts": [
