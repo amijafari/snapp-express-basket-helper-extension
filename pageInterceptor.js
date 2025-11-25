@@ -6,7 +6,6 @@
   'use strict';
 
   const API_BASE_URL = 'https://api.snapp.express';
-  const SEARCH_API_URL = 'https://api.snapp.express/mobile/v3/search';
 
   // Intercept fetch
   const originalFetch = window.fetch;
@@ -50,12 +49,9 @@
       const UDID = url.searchParams.get('UDID');
 
       if (lat && long) {
-        // Check if this is a full search context update
-        const isFullContext = lat && long && UDID;
-        
         window.postMessage({
           source: 'SNAPP_EXT',
-          type: isFullContext ? 'SEARCH_CONTEXT' : 'LOCATION_UPDATE',
+          type: 'SEARCH_CONTEXT',
           payload: {
             lat: lat,
             long: long,

@@ -53,43 +53,28 @@ window.addEventListener('message', (event) => {
     const { lat, long, pro_discount, pro_client, client, deviceType, appVersion, UDID } = event.data.payload;
     
     if (event.data.type === 'SEARCH_CONTEXT') {
-      // Full context update from search API
-      if (lat && long && UDID) {
-        const hasChanges = 
-          dynamicSearchContext.lat !== lat ||
-          dynamicSearchContext.long !== long ||
-          dynamicSearchContext.UDID !== UDID ||
-          (pro_discount && dynamicSearchContext.pro_discount !== pro_discount) ||
-          (pro_client && dynamicSearchContext.pro_client !== pro_client) ||
-          (client && dynamicSearchContext.client !== client) ||
-          (deviceType && dynamicSearchContext.deviceType !== deviceType) ||
-          (appVersion && dynamicSearchContext.appVersion !== appVersion);
-        
-        if (hasChanges) {
-          dynamicSearchContext = {
-            lat: lat,
-            long: long,
-            pro_discount: pro_discount || dynamicSearchContext.pro_discount,
-            pro_client: pro_client || dynamicSearchContext.pro_client,
-            client: client || dynamicSearchContext.client,
-            deviceType: deviceType || dynamicSearchContext.deviceType,
-            appVersion: appVersion || dynamicSearchContext.appVersion,
-            UDID: UDID || dynamicSearchContext.UDID
-          };
-          console.log('Snapp Extension: Updated search context:', dynamicSearchContext);
-        }
-      }
-    } else if (event.data.type === 'LOCATION_UPDATE') {
-      // Partial update - only lat and long, preserve other values
-      if (lat && long) {
-        if (dynamicSearchContext.lat !== lat || dynamicSearchContext.long !== long) {
-          dynamicSearchContext = {
-            ...dynamicSearchContext,
-            lat: lat,
-            long: long
-          };
-          console.log('Snapp Extension: Updated location:', { lat, long });
-        }
+      const hasChanges = 
+        (lat != null && dynamicSearchContext.lat !== lat) ||
+        (long != null && dynamicSearchContext.long !== long) ||
+        (UDID != null && dynamicSearchContext.UDID !== UDID) ||
+        (pro_discount != null && dynamicSearchContext.pro_discount !== pro_discount) ||
+        (pro_client != null && dynamicSearchContext.pro_client !== pro_client) ||
+        (client != null && dynamicSearchContext.client !== client) ||
+        (deviceType != null && dynamicSearchContext.deviceType !== deviceType) ||
+        (appVersion != null && dynamicSearchContext.appVersion !== appVersion);
+      
+      if (hasChanges) {
+        dynamicSearchContext = {
+          lat: lat != null ? lat : dynamicSearchContext.lat,
+          long: long != null ? long : dynamicSearchContext.long,
+          pro_discount: pro_discount != null ? pro_discount : dynamicSearchContext.pro_discount,
+          pro_client: pro_client != null ? pro_client : dynamicSearchContext.pro_client,
+          client: client != null ? client : dynamicSearchContext.client,
+          deviceType: deviceType != null ? deviceType : dynamicSearchContext.deviceType,
+          appVersion: appVersion != null ? appVersion : dynamicSearchContext.appVersion,
+          UDID: UDID != null ? UDID : dynamicSearchContext.UDID
+        };
+        console.log('Snapp Extension: Updated search context:', dynamicSearchContext);
       }
     }
   }
