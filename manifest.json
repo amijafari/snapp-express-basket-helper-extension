@@ -30,6 +30,12 @@
   "host_permissions": [
     "https://express.snapp.market/*",
     "https://api.snapp.express/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pageInterceptor.js"],
+      "matches": ["https://express.snapp.market/*"]
+    }
   ]
 }
 

@@ -3,28 +3,149 @@
 
 const DEFAULT_LAT = 35.737;
 const DEFAULT_LONG = 51.395;
+const DEFAULT_PRO_DISCOUNT = '18000';
+const DEFAULT_PRO_CLIENT = 'snapp';
+const DEFAULT_CLIENT = 'PWA';
+const DEFAULT_DEVICE_TYPE = 'PWA';
+const DEFAULT_APP_VERSION = '1.333.5';
+const DEFAULT_UDID = '3cba87c6-e238-4852-86d7-0352fec57794';
 
 const OVERLAY_ID = 'snapp-basket-helper-overlay';
 
-async function searchProduct(query, lat = DEFAULT_LAT, long = DEFAULT_LONG, page = 0) {
+// Store dynamic values captured from page's API requests
+let dynamicSearchContext = {
+  lat: null,
+  long: null,
+  pro_discount: null,
+  pro_client: null,
+  client: null,
+  deviceType: null,
+  appVersion: null,
+  UDID: null
+};
+
+// Inject pageInterceptor.js into the page context
+function injectPageInterceptor() {
+  // Check if already injected
+  if (window.__SNAPP_EXT_INTERCEPTOR_INJECTED__) {
+    return;
+  }
+  
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('pageInterceptor.js');
+  script.onload = function() {
+    this.remove();
+    window.__SNAPP_EXT_INTERCEPTOR_INJECTED__ = true;
+  };
+  script.onerror = function() {
+    console.error('Snapp Extension: Failed to inject pageInterceptor.js');
+  };
+  
+  const target = document.head || document.documentElement;
+  target.insertBefore(script, target.firstChild);
+}
+
+// Listen for messages from page interceptor
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return;
+  
+  if (event.data && event.data.source === 'SNAPP_EXT') {
+    const { lat, long, pro_discount, pro_client, client, deviceType, appVersion, UDID } = event.data.payload;
+    
+    if (event.data.type === 'SEARCH_CONTEXT') {
+      // Full context update from search API
+      if (lat && long && UDID) {
+        const hasChanges = 
+          dynamicSearchContext.lat !== lat ||
+          dynamicSearchContext.long !== long ||
+          dynamicSearchContext.UDID !== UDID ||
+          (pro_discount && dynamicSearchContext.pro_discount !== pro_discount) ||
+          (pro_client && dynamicSearchContext.pro_client !== pro_client) ||
+          (client && dynamicSearchContext.client !== client) ||
+          (deviceType && dynamicSearchContext.deviceType !== deviceType) ||
+          (appVersion && dynamicSearchContext.appVersion !== appVersion);
+        
+        if (hasChanges) {
+          dynamicSearchContext = {
+            lat: lat,
+            long: long,
+            pro_discount: pro_discount || dynamicSearchContext.pro_discount,
+            pro_client: pro_client || dynamicSearchContext.pro_client,
+            client: client || dynamicSearchContext.client,
+            deviceType: deviceType || dynamicSearchContext.deviceType,
+            appVersion: appVersion || dynamicSearchContext.appVersion,
+            UDID: UDID || dynamicSearchContext.UDID
+          };
+          console.log('Snapp Extension: Updated search context:', dynamicSearchContext);
+        }
+      }
+    } else if (event.data.type === 'LOCATION_UPDATE') {
+      // Partial update - only lat and long, preserve other values
+      if (lat && long) {
+        if (dynamicSearchContext.lat !== lat || dynamicSearchContext.long !== long) {
+          dynamicSearchContext = {
+            ...dynamicSearchContext,
+            lat: lat,
+            long: long
+          };
+          console.log('Snapp Extension: Updated location:', { lat, long });
+        }
+      }
+    }
+  }
+});
+
+// Inject interceptor when content script loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', injectPageInterceptor);
+} else {
+  injectPageInterceptor();
+}
+
+function isSearchContextInitialized() {
+  return dynamicSearchContext.lat !== null && 
+         dynamicSearchContext.long !== null && 
+         dynamicSearchContext.UDID !== null;
+}
+
+function showInitAlert() {
+  alert('لطفاً ابتدا یک محصول را در سایت جستجو کنید تا افزونه راه‌اندازی شود.');
+}
+
+async function searchProduct(query, lat = null, long = null, pro_discount = null, page = 0) {
   const baseUrl = 'https://api.snapp.express/mobile/v3/search';
+  
+  // Use provided values or dynamic values from context (no defaults)
+  const finalLat = lat || dynamicSearchContext.lat;
+  const finalLong = long || dynamicSearchContext.long;
+  const finalProDiscount = pro_discount || dynamicSearchContext.pro_discount;
+  const finalProClient = dynamicSearchContext.pro_client;
+  const finalClient = dynamicSearchContext.client;
+  const finalDeviceType = dynamicSearchContext.deviceType;
+  const finalAppVersion = dynamicSearchContext.appVersion;
+  const finalUDID = dynamicSearchContext.UDID;
+  
+  // Validate required parameters
+  if (!finalLat || !finalLong || !finalProDiscount) {
+    throw new Error('Search context not initialized. Please search for an item on the website first.');
+  }
   
   const params = new URLSearchParams({
     query: query,
     superType: '[4]',
     new_design: '0',
-    lat: lat.toString(),
-    long: long.toString(),
+    lat: finalLat.toString(),
+    long: finalLong.toString(),
     new_search: '1',
     page: page.toString(),
-    pro_client: 'snapp',
-    pro_discount: '18000',
+    pro_client: finalProClient,
+    pro_discount: finalProDiscount.toString(),
     size: '20',
     source: '2',
-    client: 'PWA',
-    deviceType: 'PWA',
-    appVersion: '1.333.5',
-    UDID: '3cba87c6-e238-4852-86d7-0352fec57794'
+    client: finalClient,
+    deviceType: finalDeviceType,
+    appVersion: finalAppVersion,
+    UDID: finalUDID
   });
 
   const url = `${baseUrl}?${params.toString()}`;
@@ -461,6 +582,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({
             ok: false,
             error: 'هیچ نام محصول معتبری ارائه نشده است'
+          });
+          return;
+        }
+
+        // Check if search context is initialized
+        if (!isSearchContextInitialized()) {
+          showInitAlert();
+          sendResponse({
+            ok: false,
+            error: 'لطفاً ابتدا یک محصول را در سایت جستجو کنید تا افزونه راه‌اندازی شود.'
           });
           return;
         }
