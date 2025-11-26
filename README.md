@@ -6,18 +6,18 @@ A Chrome extension (Manifest V3) that helps users find Snapp Express supermarket
 
 ## Features
 
-- 🛒 **Shopping List Management**: Add multiple products to your shopping list with an intuitive interface
-- 🔍 **Smart Store Search**: Searches Snapp Express API for stores that carry all your products
-- 📍 **Store Information**: Displays store details including:
+- **Shopping List Management**: Add multiple products to your shopping list with an intuitive interface
+- **Smart Store Search**: Searches Snapp Express API for stores that carry all your products
+- **Store Information**: Displays store details including:
   - Store name and address
   - Store icon/logo
   - Rating
   - Delivery fee
   - Delivery time
-- 🖼️ **Product Images**: Shows images of matched products for each store
-- 🔗 **Direct Links**: Click on store names to navigate directly to the store page
-- 🌐 **Persian Language Support**: Fully localized interface in Persian (Farsi) with RTL layout
-- ⚡ **Fast & Efficient**: Parallel API calls for quick results
+- **Product Images**: Shows images of matched products for each store
+- **Direct Links**: Click on store names to navigate directly to the store page
+- **Persian Language Support**: Fully localized interface in Persian (Farsi) with RTL layout
+- **Fast & Efficient**: Parallel API calls for quick results
 
 ## Installation
 
@@ -51,17 +51,11 @@ A Chrome extension (Manifest V3) that helps users find Snapp Express supermarket
    - Results are sorted by delivery fee (lowest first)
 6. **Navigate to Store**: Click on any store name to open its page in the same tab
 
-## Requirements
-
-- Google Chrome browser (latest version recommended)
-- Active account on Snapp Express (must be logged in to express.snapp.market)
-- Internet connection
-
 ## Browser Compatibility
 
-- ✅ Chrome (Manifest V3)
-- ✅ Edge (Chromium-based)
-- ✅ Other Chromium-based browsers
+- Chrome (Manifest V3)
+- Edge (Chromium-based)
+- Other Chromium-based browsers
 
 ## TODO
 
