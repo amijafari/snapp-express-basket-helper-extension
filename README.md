@@ -60,3 +60,8 @@ A Chrome extension (Manifest V3) that helps users find Snapp Express supermarket
 - ✅ Chrome (Manifest V3)
 - ✅ Edge (Chromium-based)
 - ✅ Other Chromium-based browsers
+
+## TODO
+
+- [ ] Link to view product
+- [ ] Add all items to cart at once
