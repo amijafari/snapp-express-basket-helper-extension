@@ -2,6 +2,8 @@
 
 A Chrome extension (Manifest V3) that helps users find Snapp Express supermarkets that carry **all** products in their shopping list. The extension searches through available stores and displays only those vendors that have every item you need.
 
+![Demo](demo.gif)
+
 ## Features
 
 - 🛒 **Shopping List Management**: Add multiple products to your shopping list with an intuitive interface
