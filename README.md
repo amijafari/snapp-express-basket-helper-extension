@@ -65,5 +65,6 @@ A Chrome extension (Manifest V3) that helps users find Snapp Express supermarket
 
 ## TODO
 
+- [ ] Show store badges (PRO, Free delivery)
 - [ ] Link to view product
 - [ ] Add all items to cart at once
