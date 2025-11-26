@@ -1,15 +1,6 @@
 // Content script for Snapp Express Basket Helper
 // Runs on https://express.snapp.market/*
 
-const DEFAULT_LAT = 35.737;
-const DEFAULT_LONG = 51.395;
-const DEFAULT_PRO_DISCOUNT = '18000';
-const DEFAULT_PRO_CLIENT = 'snapp';
-const DEFAULT_CLIENT = 'PWA';
-const DEFAULT_DEVICE_TYPE = 'PWA';
-const DEFAULT_APP_VERSION = '1.333.5';
-const DEFAULT_UDID = '3cba87c6-e238-4852-86d7-0352fec57794';
-
 const OVERLAY_ID = 'snapp-basket-helper-overlay';
 
 // Store dynamic values captured from page's API requests
@@ -100,7 +91,7 @@ function showInitAlert() {
 async function searchProduct(query, lat = null, long = null, pro_discount = null, page = 0) {
   const baseUrl = 'https://api.snapp.express/mobile/v3/search';
   
-  // Use provided values or dynamic values from context (no defaults)
+  // Use provided values or dynamic values from context
   const finalLat = lat || dynamicSearchContext.lat;
   const finalLong = long || dynamicSearchContext.long;
   const finalProDiscount = pro_discount || dynamicSearchContext.pro_discount;
